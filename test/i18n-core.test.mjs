@@ -405,10 +405,10 @@ test('v1.0.1 i18n keys cover all 8 languages for scene presets, 6 new config key
 });
 
 test('settings-panel schema, scene presets, strict apiKey-stripping JSON export, and allowlist-validated JSON import', () => {
-  // Verify all 39 global config keys (including darkAura, darkAuraStyle, convRipple, effortMemory, periodicModelPicker, contextMenu, sidebarNavFold, scrollBottomMotion, hostLocalization, omniModule, linkTarget, sidebarStudio, autoUpdate, updateChannel & autoArchiveOnExit) match exact contract
+  // Verify the general settings schema and defaults.
   const { PRISM_SETTINGS_SCHEMA, SCENE_PRESETS, buildSanitizedConfigExport, validateImportedConfigJson, getDefaultSettingsPatch } =
     settingsPanel;
-  assert.equal(Object.keys(PRISM_SETTINGS_SCHEMA).length, 39);
+  assert.equal(Object.keys(PRISM_SETTINGS_SCHEMA).length, 40);
   assert.deepEqual(PRISM_SETTINGS_SCHEMA.homeRipple.allowed, [true, false]);
   assert.equal(PRISM_SETTINGS_SCHEMA.homeRipple.default, true);
   assert.deepEqual(PRISM_SETTINGS_SCHEMA.convRipple.allowed, ['off', 'subtle', 'medium', 'full']);
@@ -423,10 +423,13 @@ test('settings-panel schema, scene presets, strict apiKey-stripping JSON export,
   assert.equal(PRISM_SETTINGS_SCHEMA.effortMemory.default, 'on');
   assert.deepEqual(PRISM_SETTINGS_SCHEMA.periodicModelPicker.allowed, ['on', 'off']);
   assert.equal(PRISM_SETTINGS_SCHEMA.periodicModelPicker.default, 'on');
+  assert.deepEqual(PRISM_SETTINGS_SCHEMA.compactMediaBudget.allowed, [true, false]);
+  assert.equal(PRISM_SETTINGS_SCHEMA.compactMediaBudget.default, false);
   for (const lang of ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'es', 'fr', 'de']) {
     const ui = i18nLocales.getUiStrings(lang);
     assert.ok(typeof ui.setPeriodicPickerTitle === 'string' && ui.setPeriodicPickerTitle.trim().length > 0, `Missing setPeriodicPickerTitle for ${lang}`);
     assert.ok(typeof ui.setPeriodicPickerDesc === 'string' && ui.setPeriodicPickerDesc.trim().length > 0, `Missing setPeriodicPickerDesc for ${lang}`);
+    assert.ok(ui.setCompactMediaBudgetTitle && ui.setCompactMediaBudgetDesc, `Missing compact media setting for ${lang}`);
   }
   assert.deepEqual(PRISM_SETTINGS_SCHEMA.sidebarNavFold.allowed, ['off', 'on']);
   assert.equal(PRISM_SETTINGS_SCHEMA.sidebarNavFold.default, 'off');
@@ -530,7 +533,8 @@ test('settings-panel schema, scene presets, strict apiKey-stripping JSON export,
   assert.equal(validateImportedConfigJson('not-json').ok, false);
   assert.equal(validateImportedConfigJson('{"unknownOnly": 1}').ok, false);
   const defaultPatch = getDefaultSettingsPatch();
-  assert.equal(Object.keys(defaultPatch).length, 39);
+  assert.equal(Object.keys(defaultPatch).length, 40);
+  assert.equal(defaultPatch.compactMediaBudget, false);
   assert.equal(defaultPatch.homeRipple, true);
   assert.equal(defaultPatch.convRipple, 'off');
   assert.equal(defaultPatch.darkAura, 'balanced');

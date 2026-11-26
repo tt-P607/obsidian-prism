@@ -182,6 +182,7 @@
     effortSliderModule: S_AUTO,
     effortMemory: S_ON,
     periodicModelPicker: S_ON,
+    compactMediaBudget: S_F,
     omniModule: S_ON,
     linkTarget: mkSp(['builtin', 'external']),
     sidebarStudio: S_OFF,
@@ -2530,6 +2531,7 @@
             RS('effortSliderModule', autoOnOff, 'EffortSlider'),
             RS('effortMemory', onOffStr, 'EffortMemory'),
             RS('periodicModelPicker', onOffStr, 'PeriodicPicker'),
+            RS('compactMediaBudget', onOff),
             RS('omniModule', onOffStr, 'Omni'),
             RS('linkTarget', [['builtin', U('optLinkBuiltin')], ['external', U('optLinkExternal')]]),
             RS('sidebarStudio', onOffStr),
@@ -2550,7 +2552,7 @@
             { id: 'appearance', title: U('grpAppearance'), keys: ['palette', 'lightPreset', 'darkAuraStyle', 'accentTone', 'cornerStyle', 'ambientIntensity', 'darkAura', 'motionLevel', 'targetFps', 'homeLayout', 'homeRipple', 'convRipple', 'logoInk', 'language', 'hostLocalization'] },
             { id: 'interaction', title: U('grpInteraction'), keys: ['composerRestyle', 'placeholderStyle', 'smoothCaret', 'scrollBottomMotion', 'contextMenu', 'codeFont', 'codeLigatures', 'mascot', 'sidebarRestyle', 'sidebarCompact', 'sidebarNavFold'] },
             { id: 'thought', title: U('grpThought'), keys: ['thoughtTranslate', 'thoughtTrigger', 'thoughtView'] },
-            { id: 'modules', title: U('groupModules'), keys: ['telemetryModule', 'effortSliderModule', 'effortMemory', 'periodicModelPicker', 'omniModule', 'linkTarget'] },
+            { id: 'modules', title: U('groupModules'), keys: ['telemetryModule', 'effortSliderModule', 'effortMemory', 'periodicModelPicker', 'compactMediaBudget', 'omniModule', 'linkTarget'] },
             { id: 'beta', title: U('grpBeta'), keys: ['sidebarStudio'] },
           ];
 

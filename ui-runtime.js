@@ -149,7 +149,7 @@
     out.placeholderStyle = out.promptStyle = (out.placeholderStyle ?? out.promptStyle) === 'host' ? 'host' : 'studio';
     out.mascot = out.mascot === 'off' || out.mascot === false ? 'off' : /^(minis|quad(-minis)?|r:[ckdw0-4,+m]+)$/.test(out.mascot) ? out.mascot : 'crab';
     out.convRipple = normConvRipple(out.convRipple);
-    for (const k of ['sidebarCompact', 'codeLigatures', 'autoArchiveOnExit']) out[k] = out[k] === true || out[k] === 'on';
+    for (const k of ['sidebarCompact', 'codeLigatures', 'autoArchiveOnExit', 'compactMediaBudget']) out[k] = out[k] === true || out[k] === 'on';
     for (const k of ['sidebarNavFold', 'sidebarStudio', 'autoUpdate']) out[k] = out[k] === 'on' || out[k] === true ? 'on' : 'off';
     for (const k of ['smoothCaret', 'contextMenu']) out[k] = out[k] === undefined ? true : out[k] !== false && out[k] !== 'off';
     out.accentTone = pickOf(out.accentTone, 'follow|cobalt|iris|amber|mono', 'follow');
@@ -237,6 +237,17 @@
   let localWriteEpoch = 0;
   let cfg = loadSettings(currentBaseConfig);
   let destroyed = false;
+  let removeCompactMediaBudget = null;
+  const syncCompactMediaBudget = () => {
+    if (!destroyed && cfg.compactMediaBudget) {
+      if (!removeCompactMediaBudget) {
+        try { removeCompactMediaBudget = GT.__agPrismCompactMediaBudget?.install(W); } catch {}
+      }
+    } else {
+      removeCompactMediaBudget?.();
+      removeCompactMediaBudget = null;
+    }
+  };
   let internalDomMutating = false;
   let pendingHiddenFullSync = false;
 
@@ -295,6 +306,7 @@
     const prevCfg = { ...cfg }, patch = expandSettingAliases(rawPatch);
     O.assign(currentBaseConfig, stripRuntimeMetaKeys(patch));
     cfg = normalizeConfigShape({ ...cfg, ...patch });
+    syncCompactMediaBudget();
     try {
       const saved = safeParseJsonObj(LS.getItem(STORAGE_PRISM_KEY)) || {};
       O.assign(saved, patch);
@@ -2551,6 +2563,7 @@
       if (destroyed || !ev) return;
       if (ev.key === STORAGE_PRISM_KEY || ev.key === STORAGE_FILE_CFG_KEY) {
         cfg = loadSettings(currentBaseConfig);
+        syncCompactMediaBudget();
         markAllDirty();
         applyRootAttrs();
         scheduleSync();
@@ -2916,6 +2929,7 @@
   const teardownCore = () => {
     if (coreTornDown) return;
     coreTornDown = destroyed = true;
+    syncCompactMediaBudget();
     activePaneCard = activeConvView = lastNotifiedPaneCard = lastNotifiedConvView = null;
     latestPaneModelMap.clear();
     const safe = (fn) => { try { fn?.(); } catch {} };
@@ -2979,6 +2993,7 @@
     const root = de();
     if (destroyed || lifecycleStarted || !root) return;
     lifecycleStarted = true;
+    syncCompactMediaBudget();
     flattenMainStyleSheet();
     observer.observe(root, {
       childList: true,
@@ -3026,6 +3041,7 @@
       } else {
         cfg = loadSettings(currentBaseConfig);
       }
+      syncCompactMediaBudget();
       if (lifecycleStarted && !destroyed) restartPollTimer();
       markAllDirty();
       lastAbsorbedSyncKey = '';

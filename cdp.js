@@ -42,6 +42,7 @@ const DEFAULT_CONFIG = {
   effortSliderModule: 'auto',
   effortMemory: 'on',
   periodicModelPicker: 'on',
+  compactMediaBudget: false,
   thoughtTranslate: 'off',
   thoughtTrigger: 'preload',
   homeLayout: 'studio',
@@ -91,6 +92,7 @@ const VALIDATORS = {
   effortSliderModule: ['auto', 'on', 'off'],
   effortMemory: ['on', 'off'],
   periodicModelPicker: ['on', 'off'],
+  compactMediaBudget: 'boolean',
   thoughtTranslate: ['off', 'machine', 'ai'],
   thoughtTrigger: ['preload', 'expand'],
   homeLayout: ['studio', 'classic', 'off'],
@@ -7164,6 +7166,7 @@ const DEFERRED_ROOT_MODULES = [
   'dual-mascot-rig.js',
   'settings-panel.js',
   'home-studio-panel.js',
+  'src/compact-media-budget.js',
 ];
 
 const RUNTIME_PARTS = [
@@ -8068,12 +8071,23 @@ function buildRuntimeUiSlicePayload(config) {
 
 let _configRefreshTemplate = '';
 
+function buildCompactMediaBudgetSource(config) {
+  if (config?.compactMediaBudget !== true) return '';
+  try {
+    const source = fs.readFileSync(path.join(__dirname, 'src', 'compact-media-budget.js'), 'utf8');
+    return `try { (() => {const module = undefined;\n${source}\n})(); } catch {}`;
+  } catch {
+    return '';
+  }
+}
+
 function getConfigRefreshTemplate() {
   if (_configRefreshTemplate) return _configRefreshTemplate;
   const rawTpl = `(() => {
     const cfg = __AG_REF_CFG__;
     const api = window.__agPrism || window.__agClaudeStyle;
     if (api && api.version === __AG_REF_VER__ && api.codeHash === __AG_REF_HASH__ && typeof api.refreshConfig === 'function') {
+      __AG_REF_COMPACT_MEDIA__;
       const applied = api.refreshConfig(cfg);
       if (applied === false) return { refreshed: true, skippedStale: true, version: api.version };
       const effectiveCfg = api.getState?.()?.cfg || cfg;
@@ -8170,7 +8184,8 @@ function buildConfigRefreshExpression(customConfig, extraMeta = null) {
   return getConfigRefreshTemplate()
     .replace('__AG_REF_CFG__', () => JSON.stringify(bootCfg))
     .replace('__AG_REF_VER__', () => JSON.stringify(PLUGIN_VERSION))
-    .replace('__AG_REF_HASH__', () => JSON.stringify(codeHash));
+    .replace('__AG_REF_HASH__', () => JSON.stringify(codeHash))
+    .replace('__AG_REF_COMPACT_MEDIA__', () => buildCompactMediaBudgetSource(config));
 }
 
 let _injectWrapperTemplate = null;
@@ -9291,6 +9306,12 @@ function flushPendingBundleCache() {
 
 function buildInjectExpression(customConfig, opts = null) {
   const config = customConfig ? reconcileConfigAliases(customConfig) : readConfig();
+  const expression = buildMainInjectExpression(config, opts);
+  const mediaSource = buildCompactMediaBudgetSource(config);
+  return mediaSource ? `${mediaSource}\n${expression}` : expression;
+}
+
+function buildMainInjectExpression(config, opts = null) {
   const uiSlice = buildRuntimeUiSlicePayload(config);
   const buildBootCfgJson = (codeHash) =>
     JSON.stringify({
@@ -12112,6 +12133,7 @@ const REMOVE_EXPRESSION = `(() => {
     }
   }
   delete globalThis.__agCsCleanups;
+  delete globalThis.__agPrismCompactMediaBudget;
   try {
     if (window.__agPrism && typeof window.__agPrism.destroy === 'function') {
       window.__agPrism.destroy();

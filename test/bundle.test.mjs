@@ -526,7 +526,7 @@ test('inject expression mounts cleanly without model-button or telemetry conflic
         .map((b) => b.getAttribute('data-ag-cs-key'))
         .filter(Boolean)
     );
-    assert.equal(settingKeys.size, 38);
+    assert.equal(settingKeys.size, 39);
     assert.ok(settingKeys.has('darkAura'), 'Expected darkAura setting key in Appearance panel');
     assert.ok(settingKeys.has('darkAuraStyle'), 'Expected darkAuraStyle setting key in Appearance panel');
     for (const expectedKey of [
@@ -543,6 +543,7 @@ test('inject expression mounts cleanly without model-button or telemetry conflic
       'hostLocalization',
       'effortMemory',
       'periodicModelPicker',
+      'compactMediaBudget',
       'composerRestyle',
       'placeholderStyle',
       'smoothCaret',
@@ -723,7 +724,30 @@ test('inject expression mounts cleanly without model-button or telemetry conflic
     body.appendChild(ppRootNode);
 
     // Teardown cleanly removes everything and restores host greeting text
+    Object.assign(sandbox, { URL, Headers, DataView, TextDecoder, TextEncoder, top: sandbox,
+      WebSocket: class {
+        url = 'wss://127.0.0.1:30235/connect-websocket';
+        send(data) { return data; }
+      },
+      fetch() {} });
+    sandbox.location.href = 'https://127.0.0.1:30235/';
+    const socket = new sandbox.WebSocket();
+    const originalSend = socket.send;
+    const message = JSON.stringify({ type: 'start', stream: false,
+      procedure: '/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage',
+      payload: { cascadeConfig: {}, items: [{ text: 'Follow up' }] } });
+    const enabled = { ...cdp.DEFAULT_CONFIG, compactMediaBudget: true };
+    assert.equal(sandbox.__agPrismCompactMediaBudget, undefined);
+    assert.equal(vm.runInNewContext(cdp.buildConfigRefreshExpression(enabled), sandbox).refreshed, true);
+    assert.equal(JSON.parse(socket.send(message)).payload.cascadeConfig.checkpointConfig.maxUserRequestMediaTokens, 1);
+    vm.runInNewContext(cdp.buildConfigRefreshExpression(cdp.DEFAULT_CONFIG), sandbox);
+    assert.equal(socket.send, originalSend);
+    vm.runInNewContext(cdp.buildInjectExpression(enabled), sandbox);
+    assert.notEqual(socket.send, originalSend);
+
     const rem = vm.runInNewContext(cdp.REMOVE_EXPRESSION, sandbox);
+    assert.equal(socket.send, originalSend);
+    assert.equal(sandbox.__agPrismCompactMediaBudget, undefined);
     assert.ok(rem.removed >= 1);
     assert.equal(ppDestroyed, true, 'REMOVE_EXPRESSION must destroy __agPrismPeriodicPicker');
     assert.equal(html.hasAttribute('data-ag-pp-open'), false);
